@@ -1,0 +1,58 @@
+# Import necessary libraries
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+
+# Load the dataset
+train_df = pd.read_csv("train.csv")
+test_df = pd.read_csv("test.csv")
+
+# Preprocess the data
+# Fill missing values, encode categorical variables, etc.
+# For simplicity, we'll just drop columns with missing values in this example
+train_df.dropna(inplace=True)
+test_df.dropna(inplace=True)
+
+# Encode categorical variables
+train_df = pd.get_dummies(train_df)
+test_df = pd.get_dummies(test_df)
+
+# Ensure that the train and test data have the same columns
+missing_columns = set(train_df.columns) - set(test_df.columns)
+for column in missing_columns:
+    test_df[column] = 0
+
+# Split the data into features and target variable
+X = train_df.drop(columns=['Churn'])
+y = train_df['Churn']
+
+# Split the data into training and validation sets
+X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Scale the features
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_val_scaled = scaler.transform(X_val)
+
+# Train a model (Random Forest Classifier as an example)
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train_scaled, y_train)
+
+# Make predictions on the validation set
+val_predictions = model.predict_proba(X_val_scaled)[:, 1]
+
+# Calculate the ROC AUC score on the validation set
+from sklearn.metrics import roc_auc_score
+auc_score = roc_auc_score(y_val, val_predictions)
+print("Validation ROC AUC Score:", auc_score)
+
+# Now, let's make predictions on the test set
+test_predictions = model.predict_proba(test_df)[:, 1]
+
+# Create a DataFrame with CustomerID and predicted_probability columns
+prediction_df = pd.DataFrame({'CustomerID': test_df['CustomerID'], 'predicted_probability': test_predictions})
+
+# Save the prediction DataFrame to a CSV file
+prediction_df.to_csv('predictions.csv', index=False)
