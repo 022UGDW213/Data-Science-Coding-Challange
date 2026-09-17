@@ -1,6 +1,15 @@
 # Data-Science-Coding-Challange
 Imagine that you are a new data scientist at this video streaming company and you are tasked with building a model that can predict which existing subscribers will continue their subscriptions for another month.
 
+## Files
+
+| File | Description |
+|------|-------------|
+| `Data Science Coding Challange.py` | Starter script: data exploration + submission format example |
+| `updated_model.py` | Random Forest baseline — trains, validates (ROC AUC), and writes `predictions.csv` |
+
+Usage: place `train.csv` and `test.csv` next to the scripts, then run `python3 updated_model.py`.
+
 ### Understanding the Datasets
 ## Train vs. Test
 
@@ -20,22 +29,26 @@ In addition to this identifier column, the train.csv dataset also contains the t
 
 Besides that column, both datasets have an identical set of features that can be used to train your model to make predictions. Below you can see descriptions of each feature. Familiarize yourself with them so that you can harness them most effectively for this machine learning task!
 
+```python
 import pandas as pd
 data_descriptions = pd.read_csv('data_descriptions.csv')
 pd.set_option('display.max_colwidth', None)
 data_descriptions
+```
 
 ## Import Python Modules
 # Install pip Requirements Ubuntu Linux
- 
+
 First, import the primary modules that will be used in this project. Remember as this is an open-ended project please feel free to make use of any of your favorite libraries that you feel may be useful for this challenge. For example some of the following popular packages may be useful:
 
+```python
 # import pandas
 # import numpy
-# import Scipy
-# import Scikit-learn
+# import scipy
+# import sklearn
 # import keras
-# import maplotlib
+# import matplotlib
 # import seaborn
+```
 etc, etc
 
