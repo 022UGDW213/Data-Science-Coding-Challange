@@ -1,6 +1,9 @@
 # Churn prediction model — Random Forest baseline
 # Predicts which video-streaming subscribers will continue their subscription.
-# Expects train.csv (with Churn label) and test.csv in the working directory.
+# Expects train.csv (with the Churn label) and test.csv in the working directory.
+# Neither CSV is included in this repository - see README.md.
+
+import os
 
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
@@ -9,6 +12,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 # Load the data
+missing = [name for name in ("train.csv", "test.csv") if not os.path.exists(name)]
+if missing:
+    raise SystemExit(
+        "Missing data file(s): " + ", ".join(missing) + ".\n"
+        "The challenge datasets are not part of this repository - obtain train.csv "
+        "(with the Churn label) and test.csv and place them in the working directory."
+    )
 train_df = pd.read_csv("train.csv")
 test_df = pd.read_csv("test.csv")
 test_ids = test_df["CustomerID"]
