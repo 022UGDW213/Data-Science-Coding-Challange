@@ -8,7 +8,7 @@ probability between 0 and 1).
 
 ## What is actually in this repository
 
-Verified on this workstation **2026-09-26**. The repository tracks **4 files**
+Verified on this workstation **2026-09-27**. The repository tracks **4 files**
 (`git ls-files | wc -l` → `4`), and these are the only files ever added to it
 (`git log --all --diff-filter=A --name-only` shows exactly the same four, in the single commit
 `33e9831`).
@@ -53,7 +53,10 @@ $ echo $?
 Before the missing-file guard was added, the same run ended in the raw pandas error
 `FileNotFoundError: [Errno 2] No such file or directory: 'train.csv'` with exit code `1`.
 
-`data_descriptions.csv`, which the feature-description snippet further down loads, is also absent.
+`data_descriptions.csv` is also absent. The original README carried a two-line snippet
+(`data_descriptions = pd.read_csv('data_descriptions.csv')`, line 34 of `33e9831:README.md`) to print
+the feature descriptions; the file itself has never been committed either
+(`git log --all --diff-filter=A --name-only` lists only the four tracked files above).
 
 To run either script you must obtain the challenge's `train.csv` and `test.csv` yourself and put
 them **next to the scripts**. Columns that the code actually requires (traced from the lines that
@@ -80,13 +83,25 @@ and test.csv and place them in the working directory.
 
 The challenge description that shipped with this repository stated:
 
-> train.csv contains 70% of the overall sample (243,787 subscriptions to be exact)
-> … test.csv … the remaining segment of the overall sample (104,480 subscriptions to be exact)
+> train.csv contains 70% of the overall sample (243,787 subscriptions to be exact) and importantly,
+> will reveal whether or not the subscription was continued into the next month (the “ground truth”).
+>
+> The test.csv dataset contains the exact same information about the remaining segment of the overall
+> sample (104,480 subscriptions to be exact), but does not disclose the “ground truth” for each
+> subscription.
 
-**Neither figure can be checked from this repository.** The files are not here, and no data file
-has ever been committed to it (see the history check above), so nothing on this machine can
-confirm the counts. They are recorded above as *quoted from the original challenge text* — not as
-verified facts about this repo.
+The quote itself *is* verifiable — it is recoverable from this repository's own git history, where it
+was the initial `README.md` (blob `ea0f249`, first commit `33e9831`):
+
+```console
+$ git show 33e9831:README.md | grep -n 'subscriptions to be exact'
+18:train.csv contains 70% of the overall sample (243,787 subscriptions to be exact) and importantly, will reveal whether or not the subscription was continued into the next month (the “ground truth”).
+20:The test.csv dataset contains the exact same information about the remaining segment of the overall sample (104,480 subscriptions to be exact), but does not disclose the “ground truth” for each subscription. It’s your job to predict this outcome!
+```
+
+**What cannot be checked is the counts in those sentences**, because the CSVs are not here and no data
+file has ever been committed to this repository (see the history check above). They are recorded above
+as *quoted from the original challenge text* — not as verified facts about this repo.
 
 Once you have the real CSVs, read the true counts instead of trusting any inherited number:
 
@@ -169,7 +184,7 @@ challenge's own `data_descriptions.csv`, which is not part of this repository.
 
 ---
 
-## Verification log — 2026-09-26, this workstation
+## Verification log — 2026-09-27, this workstation
 
 | Check | Command | Real result |
 |---|---|---|
@@ -177,14 +192,38 @@ challenge's own `data_descriptions.csv`, which is not part of this repository.
 | CSV/JSON files in tree | `find . -not -path './.git/*' \( -iname '*.csv' -o -iname '*.json' \) \| wc -l` | `0` |
 | Starter script syntax | `python3 -m py_compile "Data Science Coding Challange.py"` | exit `0` |
 | Model script syntax | `python3 -m py_compile updated_model.py` | exit `0` |
-| Starter script run | `python3 "Data Science Coding Challange.py"` | missing-file guard message, exit `1` |
+| Starter script run | `python3 "Data Science Coding Challange.py"` | `train.csv was not found in the working directory.` guard message, exit `1` |
 | Model script run | `python3 updated_model.py` | `Missing data file(s): train.csv, test.csv.`, exit `1` |
-| Import smoke test | import the four declared packages (`pandas`, `matplotlib.pyplot`, `seaborn`, and the sklearn submodules) | all 7 submodules import OK on Python 3.10.12 |
-| End-to-end code path | ran `updated_model.py` in a scratch directory against a **generated** 400-row `train.csv` / 120-row `test.csv` pair | exit `0`; printed `Validation ROC AUC Score: 0.38415404040404044` and `Wrote predictions.csv with 120 rows`; `predictions.csv` had 121 lines (header + 120) |
-| End-to-end code path | ran the starter script in the same scratch directory with `MPLBACKEND=Agg` | exit `0`; printed `train_df Shape: (400, 6)` plus a 5-row head; `plt.show()` emitted `UserWarning: FigureCanvasAgg is non-interactive` |
+| Import smoke test | import the four declared packages (`pandas`, `matplotlib.pyplot`, `seaborn`, and the sklearn submodules) | all 7 submodules import OK on Python 3.10.12 (`pandas 2.3.3`, `scikit-learn 1.7.2`) |
+| End-to-end code path | generated a **seeded synthetic fixture** (see below) and ran `updated_model.py` on it | exit `0`; printed `Validation ROC AUC Score: 0.47529706066291433` and `Wrote predictions.csv with 120 rows`; `predictions.csv` = 121 lines (header + 120) |
+| End-to-end code path | same fixture, ran the starter script with `MPLBACKEND=Agg` | exit `0`; printed `train_df Shape: (400, 5)` plus a 5-row head; `plt.show()` emitted `UserWarning: FigureCanvasAgg is non-interactive` |
 
-The last two rows are **code-path smoke tests on generated scratch data**, included only to prove
-the scripts run start-to-finish — and, for `updated_model.py`, that its submission shape is one row
-per test row. The `0.384` ROC AUC from that run is meaningless (the scratch labels were random) and
-it is **not** a result for this challenge. No number in this README is a model result, because the
-model has never been run on the real data: the real data is not here.
+The two end-to-end rows are reproducible: the fixture is seeded, and re-generating it produces the
+identical `0.47529706066291433` on a second run (verified twice). Regenerate it with:
+
+```bash
+python3 - <<'PY'
+import numpy as np, pandas as pd
+rng = np.random.default_rng(0)
+def frame(n, with_label, start):
+    d = {"CustomerID": [f"S{start+i:05d}" for i in range(n)],
+         "MonthlyCharges": np.round(rng.uniform(20, 120, n), 2),
+         "Tenure": rng.integers(0, 72, n),
+         "Contract": rng.choice(["monthly", "1yr", "2yr"], n)}
+    if with_label:
+        d["Churn"] = rng.integers(0, 2, n)
+    return pd.DataFrame(d)
+frame(400, True, 100000).to_csv("train.csv", index=False)
+frame(120, False, 200000).to_csv("test.csv", index=False)
+PY
+```
+
+That fixture is **synthetic smoke-test input, not the challenge data**. Its `Churn` labels are
+random, so the `0.475…` ROC AUC is meaningless as a model result. The run is included only to prove
+the scripts execute start-to-finish — and, for `updated_model.py`, that its submission shape is one
+row per `test.csv` row. No number in this README is a model result, because the model has never been
+run on the real data: the real data is not here.
+
+The pre-guard failure recorded above (`FileNotFoundError: [Errno 2] No such file or directory:
+'train.csv'`, exit `1`) is the raw pandas error that `pd.read_csv` raises on a missing file, checked
+directly with `python3 -c "import pandas as pd; pd.read_csv('train.csv')"`.
